@@ -20,6 +20,7 @@
 #include "SplitterContainer.h"
 #include "ToolTip.h"
 #include "Parameters.h"
+#include "NppDarkMode.h"
 
 using namespace std;
 
@@ -452,14 +453,20 @@ void DockingCont::drawCaptionItem(DRAWITEMSTRUCT *pDrawItemStruct)
 	// begin with paint
 	::SetBkMode(hDc, TRANSPARENT);
 
-	if (_isActive == TRUE)
-	{
-		bgbrush = ::CreateSolidBrush(::GetSysColor(COLOR_ACTIVECAPTION));
-		::SetTextColor(hDc, ::GetSysColor(COLOR_CAPTIONTEXT));
+	if (NppDarkMode::IsEnabled()) {
+		bgbrush = ::CreateSolidBrush(_isActive ? NppDarkMode::GetSofterBackgroundColor() : NppDarkMode::GetBackgroundColor());
+		SetTextColor(hDc, NppDarkMode::GetTextColor());
 	}
-	else
-	{
-		bgbrush = ::CreateSolidBrush(::GetSysColor(COLOR_BTNFACE));
+	else {
+		if (_isActive == TRUE)
+		{
+			bgbrush = ::CreateSolidBrush(::GetSysColor(COLOR_ACTIVECAPTION));
+			::SetTextColor(hDc, ::GetSysColor(COLOR_CAPTIONTEXT));
+		}
+		else
+		{
+			bgbrush = ::CreateSolidBrush(::GetSysColor(COLOR_BTNFACE));
+		}
 	}
 
 	// set text and/or caption grid
@@ -558,31 +565,52 @@ void DockingCont::drawCaptionItem(DRAWITEMSTRUCT *pDrawItemStruct)
 	::DeleteObject(bgbrush);
 
 	// draw button
-	HDC dcMem = ::CreateCompatibleDC(NULL);
 
-	// select correct bitmap
-	if ((_isMouseOver == TRUE) && (_isMouseDown == TRUE))
-		hBmpCur = (HBITMAP)::LoadImage(_hInst, MAKEINTRESOURCE(IDB_CLOSE_DOWN), IMAGE_BITMAP, _closeButtonWidth, _closeButtonHeight, 0);
-	else
-		hBmpCur = (HBITMAP)::LoadImage(_hInst, MAKEINTRESOURCE(IDB_CLOSE_UP), IMAGE_BITMAP, _closeButtonWidth, _closeButtonHeight, 0);
+	if (NppDarkMode::IsEnabled()) {
+		::SelectObject(hDc, NppParameters::getInstance().getDefaultUIFont());
 
-	// blit bitmap into the destination
-	::GetObject(hBmpCur, sizeof(bmp), &bmp);
-	hBmpOld = (HBITMAP)::SelectObject(dcMem, hBmpCur);
-	hBmpNew = ::CreateCompatibleBitmap(dcMem, bmp.bmWidth, bmp.bmHeight);
+		rc = pDrawItemStruct->rcItem;
+		if (_isTopCaption == TRUE) {
+			rc.left = rc.right - _closeButtonWidth - _closeButtonPosLeftDynamic;
+		}
+		else {
+			rc.bottom = rc.top + _closeButtonWidth + _closeButtonPosLeftDynamic; // non-dark uses Left instead of Top for the button pos so being consistent
+		}
 
-	rc = pDrawItemStruct->rcItem;
-	::SelectObject(hDc, hBmpNew);
+		if ((_isMouseOver == TRUE) && (_isMouseDown == TRUE)) {
+			::SetTextColor(hDc, RGB(0xFF, 0xFF, 0xFF));
+		}
 
-	if (_isTopCaption == TRUE)
-		::BitBlt(hDc, rc.right - bmp.bmWidth - _closeButtonPosLeftDynamic, _closeButtonPosTopDynamic, bmp.bmWidth, bmp.bmHeight, dcMem, 0, 0, SRCCOPY);
-	else
-		::BitBlt(hDc, _closeButtonPosLeftDynamic, _closeButtonPosLeftDynamic, bmp.bmWidth, bmp.bmHeight, dcMem, 0, 0, SRCCOPY);
+		::DrawText(hDc, L"x", 1, &rc, DT_VCENTER | DT_CENTER | DT_SINGLELINE);
+	}
+	else {
 
-	::SelectObject(dcMem, hBmpOld);
-	::DeleteObject(hBmpCur);
-	::DeleteObject(hBmpNew);
-	::DeleteDC(dcMem);
+		HDC dcMem = ::CreateCompatibleDC(NULL);
+
+		// select correct bitmap
+		if ((_isMouseOver == TRUE) && (_isMouseDown == TRUE))
+			hBmpCur = (HBITMAP)::LoadImage(_hInst, MAKEINTRESOURCE(IDB_CLOSE_DOWN), IMAGE_BITMAP, _closeButtonWidth, _closeButtonHeight, 0);
+		else
+			hBmpCur = (HBITMAP)::LoadImage(_hInst, MAKEINTRESOURCE(IDB_CLOSE_UP), IMAGE_BITMAP, _closeButtonWidth, _closeButtonHeight, 0);
+
+		// blit bitmap into the destination
+		::GetObject(hBmpCur, sizeof(bmp), &bmp);
+		hBmpOld = (HBITMAP)::SelectObject(dcMem, hBmpCur);
+		hBmpNew = ::CreateCompatibleBitmap(dcMem, bmp.bmWidth, bmp.bmHeight);
+
+		rc = pDrawItemStruct->rcItem;
+		::SelectObject(hDc, hBmpNew);
+
+		if (_isTopCaption == TRUE)
+			::BitBlt(hDc, rc.right - bmp.bmWidth - _closeButtonPosLeftDynamic, _closeButtonPosTopDynamic, bmp.bmWidth, bmp.bmHeight, dcMem, 0, 0, SRCCOPY);
+		else
+			::BitBlt(hDc, _closeButtonPosLeftDynamic, _closeButtonPosLeftDynamic, bmp.bmWidth, bmp.bmHeight, dcMem, 0, 0, SRCCOPY);
+
+		::SelectObject(dcMem, hBmpOld);
+		::DeleteObject(hBmpCur);
+		::DeleteObject(hBmpNew);
+		::DeleteDC(dcMem);
+	}
 
 	::RestoreDC(hDc, nSavedDC);
 }
@@ -936,6 +964,17 @@ INT_PTR CALLBACK DockingCont::run_dlgProc(UINT Message, WPARAM wParam, LPARAM lP
 			onSize();
 			break;
 		}
+		case WM_ERASEBKGND:
+		{
+			if (!NppDarkMode::IsEnabled()) {
+				break;
+			}
+			RECT rc = { 0 };
+			getClientRect(rc);
+			FillRect((HDC)wParam, &rc, NppDarkMode::GetBackgroundBrush());
+			return 1;
+		}
+
 		case WM_DRAWITEM :
 		{
 			// draw tab or caption

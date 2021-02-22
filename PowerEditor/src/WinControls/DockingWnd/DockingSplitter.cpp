@@ -19,6 +19,7 @@
 #include "DockingSplitter.h"
 #include "Notepad_plus_msgs.h"
 #include "Parameters.h"
+#include "NppDarkMode.h"
 
 BOOL DockingSplitter::_isVertReg = FALSE;
 BOOL DockingSplitter::_isHoriReg = FALSE;
@@ -141,6 +142,19 @@ LRESULT DockingSplitter::runProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM 
 				_ptOldPos = pt;
 			}
 			break;
+		}
+		case WM_ERASEBKGND:
+		{
+			if (!NppDarkMode::IsEnabled()) {
+				break;
+			}
+
+			RECT rc = { 0 };
+			getClientRect(rc);
+
+			FillRect((HDC)wParam, &rc, NppDarkMode::GetSofterBackgroundBrush());
+
+			return 1;
 		}
 		default :
 			break;

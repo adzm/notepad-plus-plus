@@ -28,6 +28,7 @@
 #include "documentMap.h"
 #include "functionListPanel.h"
 #include "fileBrowser.h"
+#include "NppDarkMode.h"
 
 using namespace std;
 
@@ -68,6 +69,9 @@ LRESULT CALLBACK Notepad_plus_Window::Notepad_plus_Proc(HWND hwnd, UINT message,
 			Notepad_plus_Window *pM30ide = static_cast<Notepad_plus_Window *>((reinterpret_cast<LPCREATESTRUCT>(lParam))->lpCreateParams);
 			pM30ide->_hSelf = hwnd;
 			::SetWindowLongPtr(hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(pM30ide));
+
+			NppDarkMode::EnableDarkScrollBarForWindowAndChildren(hwnd);
+
 			return TRUE;
 		}
 
@@ -87,8 +91,27 @@ LRESULT Notepad_plus_Window::runProc(HWND hwnd, UINT message, WPARAM wParam, LPA
 		{
 			try
 			{
+				if (NppDarkMode::IsEnabled()) {
+					NppDarkMode::AllowDarkModeForWindow(hwnd, true);
+					NppDarkMode::RefreshTitleBarThemeColor(hwnd);
+				}
+
 				_notepad_plus_plus_core._pPublicInterface = this;
-				return _notepad_plus_plus_core.init(hwnd);
+				LRESULT lRet = _notepad_plus_plus_core.init(hwnd);
+
+				if (NppDarkMode::IsEnabled()) {
+					RECT rcClient;
+					GetWindowRect(hwnd, &rcClient);
+
+					// Inform application of the frame change.
+					SetWindowPos(hwnd,
+						NULL,
+						rcClient.left, rcClient.top,
+						rcClient.right - rcClient.left, rcClient.bottom - rcClient.top,
+						SWP_FRAMECHANGED);
+				}
+
+				return lRet;
 			}
 			catch (std::exception& ex)
 			{
@@ -122,12 +145,40 @@ LRESULT Notepad_plus::process(HWND hwnd, UINT message, WPARAM wParam, LPARAM lPa
 	LRESULT result = FALSE;
 	NppParameters& nppParam = NppParameters::getInstance();
 
+	if (NppDarkMode::UAHWndProc(hwnd, message, wParam, lParam, &result)) {
+		return result;
+	}
+
 	switch (message)
 	{
 		case WM_NCACTIVATE:
 		{
 			// Note: lParam is -1 to prevent endless loops of calls
 			::SendMessage(_dockingManager.getHSelf(), WM_NCACTIVATE, wParam, -1);
+			return ::DefWindowProc(hwnd, message, wParam, lParam);
+		}
+
+		case WM_ERASEBKGND:
+		{
+			if (NppDarkMode::IsEnabled()) {
+				RECT rc = { 0 };
+				GetClientRect(hwnd, &rc);
+				FillRect((HDC)wParam, &rc, NppDarkMode::GetBackgroundBrush());
+				return 0;
+			}
+			else {
+				return ::DefWindowProc(hwnd, message, wParam, lParam);
+			}
+		}
+
+		case WM_SETTINGCHANGE:
+		{
+			if (NppDarkMode::OnSettingChange(hwnd, lParam)) {
+				// dark mode may have been toggled. Reset anything here!
+
+				SendMessage(hwnd, NPPM_SETEDITORBORDEREDGE, 0, NppParameters::getInstance().getSVP()._showBorderEdge);
+			}
+
 			return ::DefWindowProc(hwnd, message, wParam, lParam);
 		}
 
@@ -1439,8 +1490,14 @@ LRESULT Notepad_plus::process(HWND hwnd, UINT message, WPARAM wParam, LPARAM lPa
 		case NPPM_SETEDITORBORDEREDGE:
 		{
 			bool withBorderEdge = (lParam == 1);
-			_mainEditView.setBorderEdge(withBorderEdge);
-			_subEditView.setBorderEdge(withBorderEdge);
+			if (NppDarkMode::IsEnabled()) {
+				_mainEditView.setBorderEdge(false);
+				_subEditView.setBorderEdge(false);
+			}
+			else {
+				_mainEditView.setBorderEdge(withBorderEdge);
+				_subEditView.setBorderEdge(withBorderEdge);
+			}
 			return TRUE;
 		}
 
@@ -1545,6 +1602,22 @@ LRESULT Notepad_plus::process(HWND hwnd, UINT message, WPARAM wParam, LPARAM lPa
 
 		case WM_NOTIFY:
 		{
+			NMHDR* nmhdr = reinterpret_cast<NMHDR*>(lParam);
+			if (nmhdr->code == NM_CUSTOMDRAW && (nmhdr->hwndFrom == _toolBar.getHSelf())) {
+				NMTBCUSTOMDRAW* nmtbcd = reinterpret_cast<NMTBCUSTOMDRAW*>(lParam);
+				if (nmtbcd->nmcd.dwDrawStage == CDDS_PREERASE) {
+					if (NppDarkMode::IsEnabled()) {
+						FillRect(nmtbcd->nmcd.hdc, &nmtbcd->nmcd.rc, NppDarkMode::GetBackgroundBrush());
+						nmtbcd->clrText = NppDarkMode::GetTextColor();
+						SetTextColor(nmtbcd->nmcd.hdc, NppDarkMode::GetTextColor());
+						return CDRF_SKIPDEFAULT;
+					}
+					else {
+						return CDRF_DODEFAULT;
+					}
+				}
+			}
+
 			SCNotification *notification = reinterpret_cast<SCNotification *>(lParam);
 
 			if (notification->nmhdr.code == SCN_UPDATEUI)
@@ -1667,7 +1740,7 @@ LRESULT Notepad_plus::process(HWND hwnd, UINT message, WPARAM wParam, LPARAM lPa
 
 		case WM_ACTIVATE:
 		{
-			if (wParam != WA_INACTIVE)
+			if (wParam != WA_INACTIVE && _pEditView && _pNonEditView)
 			{
 				_pEditView->getFocus();
 				auto x = _pEditView->execute(SCI_GETXOFFSET);
