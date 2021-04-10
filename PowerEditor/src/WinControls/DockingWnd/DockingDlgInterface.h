@@ -97,9 +97,8 @@ protected :
 		{
 			case WM_ERASEBKGND:
 			{
-				if (!NppDarkMode::IsEnabled()) {
+				if (!NppDarkMode::IsEnabled())
 					break;
-				}
 
 				RECT rc = { 0 };
 				getClientRect(rc);

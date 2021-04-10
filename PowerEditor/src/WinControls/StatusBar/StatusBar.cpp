@@ -59,23 +59,22 @@ LRESULT CALLBACK StatusBarSubclass(
 	UNREFERENCED_PARAMETER(dwRefData);
 	UNREFERENCED_PARAMETER(uIdSubclass);
 
-	switch (uMsg) {
+	switch (uMsg)
+	{
 	case WM_ERASEBKGND:
 	{
-		if (!NppDarkMode::IsEnabled()) {
+		if (!NppDarkMode::IsEnabled())
 			return DefSubclassProc(hWnd, uMsg, wParam, lParam);
-		}
 
 		RECT rc;
 		GetClientRect(hWnd, &rc);
 		FillRect((HDC)wParam, &rc, NppDarkMode::GetBackgroundBrush());
-		return 1;
+		return TRUE;
 	}
 	case WM_PAINT:
 	{
-		if (!NppDarkMode::IsEnabled()) {
+		if (!NppDarkMode::IsEnabled())
 			return DefSubclassProc(hWnd, uMsg, wParam, lParam);
-		}
 
 		struct {
 			int horizontal;
@@ -95,14 +94,14 @@ LRESULT CALLBACK StatusBarSubclass(
 
 		FillRect(hdc, &ps.rcPaint, NppDarkMode::GetBackgroundBrush());
 
-		int nParts = SendMessage(hWnd, SB_GETPARTS, 0, 0);
-		for (int i = 0; i < nParts; ++i) {
+		int nParts = (int)SendMessage(hWnd, SB_GETPARTS, 0, 0);
+		for (int i = 0; i < nParts; ++i)
+		{
 			RECT rcPart = { 0 };
 			SendMessage(hWnd, SB_GETRECT, i, (LPARAM)&rcPart);
 			RECT rcIntersect = { 0 };
-			if (!IntersectRect(&rcIntersect, &rcPart, &ps.rcPaint)) {
+			if (!IntersectRect(&rcIntersect, &rcPart, &ps.rcPaint))
 				continue;
-			}
 
 			DWORD cchText = LOWORD(SendMessage(hWnd, SB_GETTEXTLENGTH, i, 0));
 			std::vector<wchar_t> str;
@@ -129,7 +128,7 @@ LRESULT CALLBACK StatusBarSubclass(
 void StatusBar::init(HINSTANCE hInst, HWND hPere, int nbParts)
 {
 	Window::init(hInst, hPere);
-    InitCommonControls();
+	InitCommonControls();
 
 	// _hSelf = CreateStatusWindow(WS_CHILD | WS_CLIPSIBLINGS, NULL, _hParent, IDC_STATUSBAR);
 	_hSelf = ::CreateWindowEx(
@@ -143,15 +142,14 @@ void StatusBar::init(HINSTANCE hInst, HWND hPere, int nbParts)
 	if (!_hSelf)
 		throw std::runtime_error("StatusBar::init : CreateWindowEx() function return null");
 
-	if (nbParts > 0) {
+	if (nbParts > 0)
 		SetWindowSubclass(_hSelf, StatusBarSubclass, 42, 0);
-	}
 
 	_partWidthArray.clear();
 	if (nbParts > 0)
 		_partWidthArray.resize(nbParts, defaultPartWidth);
 
-    // Allocate an array for holding the right edge coordinates.
+	// Allocate an array for holding the right edge coordinates.
 	if (_partWidthArray.size())
 		_lpParts = new int[_partWidthArray.size()];
 
@@ -195,17 +193,17 @@ int StatusBar::getHeight() const
 
 void StatusBar::adjustParts(int clientWidth)
 {
-    // Calculate the right edge coordinate for each part, and
-    // copy the coordinates to the array.
-    int nWidth = std::max<int>(clientWidth - 20, 0);
+	// Calculate the right edge coordinate for each part, and
+	// copy the coordinates to the array.
+	int nWidth = std::max<int>(clientWidth - 20, 0);
 
 	for (int i = static_cast<int>(_partWidthArray.size()) - 1; i >= 0; i--)
-    {
+	{
 		_lpParts[i] = nWidth;
 		nWidth -= _partWidthArray[i];
 	}
 
-    // Tell the status bar to create the window parts.
+	// Tell the status bar to create the window parts.
 	::SendMessage(_hSelf, SB_SETPARTS, _partWidthArray.size(), reinterpret_cast<LPARAM>(_lpParts));
 }
 

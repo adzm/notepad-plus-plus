@@ -59,7 +59,7 @@ void TabBar::init(HINSTANCE hInst, HWND parent, bool isVertical, bool isMultiLin
 	int multiLine = isMultiLine ? TCS_MULTILINE : 0;
 
 	int style = WS_CHILD | WS_CLIPCHILDREN | WS_CLIPSIBLINGS | WS_VISIBLE |\
-        TCS_FOCUSNEVER | TCS_TABS | WS_TABSTOP | vertical | multiLine;
+		TCS_FOCUSNEVER | TCS_TABS | WS_TABSTOP | vertical | multiLine;
 
 	_hSelf = ::CreateWindowEx(
 				0,
@@ -128,12 +128,12 @@ void TabBar::setFont(const TCHAR *fontName, int fontSize)
 		::DeleteObject(_hFont);
 
 	_hFont = ::CreateFont( fontSize, 0,
-						  (_isVertical) ? 900:0,
-						  (_isVertical) ? 900:0,
-		                   FW_NORMAL,
-			               0, 0, 0, 0,
-			               0, 0, 0, 0,
-				           fontName);
+		(_isVertical) ? 900:0,
+		(_isVertical) ? 900:0,
+		FW_NORMAL,
+		0, 0, 0, 0,
+		0, 0, 0, 0,
+		fontName);
 	if (_hFont)
 		::SendMessage(_hSelf, WM_SETFONT, reinterpret_cast<WPARAM>(_hFont), 0);
 }
@@ -574,7 +574,7 @@ LRESULT TabBarPlus::runProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lPara
 			return TRUE;
 		}
 
-		case WM_LBUTTONDOWN :
+		case WM_LBUTTONDOWN:
 		{
 			if (::GetWindowLongPtr(_hSelf, GWL_STYLE) & TCS_BUTTONS)
 			{
@@ -598,20 +598,20 @@ LRESULT TabBarPlus::runProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lPara
 				}
 			}
 
-            ::CallWindowProc(_tabBarDefaultProc, hwnd, Message, wParam, lParam);
+			::CallWindowProc(_tabBarDefaultProc, hwnd, Message, wParam, lParam);
 			int currentTabOn = static_cast<int32_t>(::SendMessage(_hSelf, TCM_GETCURSEL, 0, 0));
 
 			if (wParam == 2)
 				return TRUE;
 
-            if (_doDragNDrop)
-            {
+			if (_doDragNDrop)
+			{
 				_mightBeDragging = true;
-            }
+			}
 
 			notify(NM_CLICK, currentTabOn);
 
-            return TRUE;
+			return TRUE;
 		}
 
 		case WM_RBUTTONDOWN :	//rightclick selects tab aswell
@@ -665,13 +665,13 @@ LRESULT TabBarPlus::runProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lPara
 
 			if (_isDragging)
 			{
-                exchangeItemData(p);
+				exchangeItemData(p);
 
 				// Get cursor position of "Screen"
 				// For using the function "WindowFromPoint" afterward!!!
 				::GetCursorPos(&_draggingPoint);
 				draggingCursor(_draggingPoint);
-			    return TRUE;
+				return TRUE;
 			}
 			else
 			{
@@ -859,9 +859,8 @@ LRESULT TabBarPlus::runProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lPara
 
 		case WM_ERASEBKGND:
 		{
-			if (!NppDarkMode::IsEnabled()) {
+			if (!NppDarkMode::IsEnabled())
 				break;
-			}
 
 			RECT rc = { 0 };
 			GetClientRect(hwnd, &rc);
@@ -872,14 +871,12 @@ LRESULT TabBarPlus::runProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lPara
 
 		case WM_PAINT:
 		{
-			if (!NppDarkMode::IsEnabled()) {
+			if (!NppDarkMode::IsEnabled())
 				break;
-			}
 
-			DWORD dwStyle = GetWindowLongPtr(hwnd, GWL_STYLE);
-			if (!(dwStyle & TCS_OWNERDRAWFIXED) || (dwStyle & TCS_BOTTOM) || (dwStyle & TCS_BUTTONS)) {
+			const auto dwStyle = GetWindowLongPtr(hwnd, GWL_STYLE);
+			if (!(dwStyle & TCS_OWNERDRAWFIXED) || (dwStyle & TCS_BOTTOM) || (dwStyle & TCS_BUTTONS))
 				break;
-			}
 
 			PAINTSTRUCT ps;
 			HDC hdc = BeginPaint(hwnd, &ps);
@@ -892,7 +889,8 @@ LRESULT TabBarPlus::runProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lPara
 			HPEN holdPen = (HPEN)SelectObject(hdc, g_hpen);
 
 			HRGN holdClip = CreateRectRgn(0, 0, 0, 0);
-			if (1 != GetClipRgn(hdc, holdClip)) {
+			if (1 != GetClipRgn(hdc, holdClip))
+			{
 				DeleteObject(holdClip);
 				holdClip = nullptr;
 			}
@@ -902,37 +900,46 @@ LRESULT TabBarPlus::runProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lPara
 			int nTabs = TabCtrl_GetItemCount(hwnd);
 			int nFocusTab = TabCtrl_GetCurFocus(hwnd);
 			int nSelTab = TabCtrl_GetCurSel(hwnd);
-			for (int i = 0; i < nTabs; ++i) {
-				DRAWITEMSTRUCT dis = { ODT_TAB, id, (UINT)i, ODA_DRAWENTIRE, ODS_DEFAULT, hwnd, hdc };
+			for (int i = 0; i < nTabs; ++i)
+			{
+				DRAWITEMSTRUCT dis = {ODT_TAB, id, (UINT)i, ODA_DRAWENTIRE, ODS_DEFAULT, hwnd, hdc};
 				TabCtrl_GetItemRect(hwnd, i, &dis.rcItem);
 
-				if (i == nFocusTab) {
+				if (i == nFocusTab)
+				{
 					dis.itemState |= ODS_FOCUS;
 				}
-				if (i == nSelTab) {
+				if (i == nSelTab)
+				{
 					dis.itemState |= ODS_SELECTED;
 				}
 
 				dis.itemState |= ODS_NOFOCUSRECT; // maybe, does it handle it already?
 
-				RECT rcIntersect = { 0 };
-				if (IntersectRect(&rcIntersect, &ps.rcPaint, &dis.rcItem)) {
-					if (dwStyle & TCS_VERTICAL) {
+				RECT rcIntersect = {0};
+				if (IntersectRect(&rcIntersect, &ps.rcPaint, &dis.rcItem))
+				{
+					if (dwStyle & TCS_VERTICAL)
+					{
 						POINT edges[] = {
 							{dis.rcItem.left, dis.rcItem.bottom - 1},
 							{dis.rcItem.right, dis.rcItem.bottom - 1}
 						};
-						if (i != nSelTab && (i != nSelTab - 1)) {
+						if (i != nSelTab && (i != nSelTab - 1))
+						{
 							edges[0].x += topBarHeight;
 						}
 						Polyline(hdc, edges, _countof(edges));
 						dis.rcItem.bottom -= 1;
-					} else {
+					}
+					else
+					{
 						POINT edges[] = {
 							{dis.rcItem.right - 1, dis.rcItem.top},
 							{dis.rcItem.right - 1, dis.rcItem.bottom}
 						};
-						if (i != nSelTab && (i != nSelTab - 1)) {
+						if (i != nSelTab && (i != nSelTab - 1))
+						{
 							edges[0].y += topBarHeight;
 						}
 						Polyline(hdc, edges, _countof(edges));
@@ -952,7 +959,8 @@ LRESULT TabBarPlus::runProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lPara
 			}
 
 			SelectClipRgn(hdc, holdClip);
-			if (holdClip) {
+			if (holdClip)
+			{
 				DeleteObject(holdClip);
 				holdClip = nullptr;
 			}
@@ -1055,9 +1063,9 @@ void TabBarPlus::drawItem(DRAWITEMSTRUCT *pDrawItemStruct, bool isDarkMode)
 	RECT barRect = rect;
 	if (isSelected)
 	{
-		if (isDarkMode) {
+		if (isDarkMode)
 			::FillRect(hDC, &barRect, NppDarkMode::GetSofterBackgroundBrush());
-		}
+		
 		if (_drawTopBar)
 		{
 			int topBarHeight = NppParameters::getInstance()._dpiManager.scaleX(4);
@@ -1223,9 +1231,8 @@ void TabBarPlus::drawItem(DRAWITEMSTRUCT *pDrawItemStruct, bool isDarkMode)
 	}
 
 	COLORREF textColor = isSelected ? _activeTextColour : _inactiveTextColour;
-	if (isDarkMode) {
+	if (isDarkMode)
 		textColor = NppDarkMode::InvertLightnessSofter(textColor);
-	}
 
 	::SetTextColor(hDC, textColor);
 
@@ -1252,8 +1259,8 @@ void TabBarPlus::draggingCursor(POINT screenPoint)
 		}
 		else if (isPointInParentZone(screenPoint))
 			::SetCursor(::LoadCursor(_hInst, MAKEINTRESOURCE(IDC_DRAG_INTERDIT_TAB)));
-        else // drag out of application
-            ::SetCursor(::LoadCursor(_hInst, MAKEINTRESOURCE(IDC_DRAG_OUT_TAB)));
+		else // drag out of application
+			::SetCursor(::LoadCursor(_hInst, MAKEINTRESOURCE(IDC_DRAG_OUT_TAB)));
 	}
 }
 

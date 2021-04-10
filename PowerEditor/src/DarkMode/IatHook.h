@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include <stdint.h>
+#include <cstdint>
 
 template <typename T, typename T1, typename T2>
 constexpr T RVA2VA(T1 base, T2 rva)
@@ -14,15 +14,15 @@ constexpr T RVA2VA(T1 base, T2 rva)
 }
 
 template <typename T>
-constexpr T DataDirectoryFromModuleBase(void *moduleBase, size_t entryID)
+constexpr T DataDirectoryFromModuleBase(void* moduleBase, size_t entryID)
 {
-	auto dosHdr = reinterpret_cast<PIMAGE_DOS_HEADER>(moduleBase);
-	auto ntHdr = RVA2VA<PIMAGE_NT_HEADERS>(moduleBase, dosHdr->e_lfanew);
-	auto dataDir = ntHdr->OptionalHeader.DataDirectory;
+	const auto dosHdr = static_cast<PIMAGE_DOS_HEADER>(moduleBase);
+	const auto ntHdr = RVA2VA<PIMAGE_NT_HEADERS>(moduleBase, dosHdr->e_lfanew);
+	const auto dataDir = ntHdr->OptionalHeader.DataDirectory;
 	return RVA2VA<T>(moduleBase, dataDir[entryID].VirtualAddress);
 }
 
-PIMAGE_THUNK_DATA FindAddressByName(void *moduleBase, PIMAGE_THUNK_DATA impName, PIMAGE_THUNK_DATA impAddr, const char *funcName)
+inline PIMAGE_THUNK_DATA FindAddressByName(void* moduleBase, PIMAGE_THUNK_DATA impName, PIMAGE_THUNK_DATA impAddr, const char* funcName)
 {
 	for (; impName->u1.Ordinal; ++impName, ++impAddr)
 	{
@@ -37,7 +37,7 @@ PIMAGE_THUNK_DATA FindAddressByName(void *moduleBase, PIMAGE_THUNK_DATA impName,
 	return nullptr;
 }
 
-PIMAGE_THUNK_DATA FindAddressByOrdinal(void *moduleBase, PIMAGE_THUNK_DATA impName, PIMAGE_THUNK_DATA impAddr, uint16_t ordinal)
+inline PIMAGE_THUNK_DATA FindAddressByOrdinal(void* moduleBase, PIMAGE_THUNK_DATA impName, PIMAGE_THUNK_DATA impAddr, uint16_t ordinal)
 {
 	UNREFERENCED_PARAMETER(moduleBase);
 	for (; impName->u1.Ordinal; ++impName, ++impAddr)
@@ -48,7 +48,7 @@ PIMAGE_THUNK_DATA FindAddressByOrdinal(void *moduleBase, PIMAGE_THUNK_DATA impNa
 	return nullptr;
 }
 
-PIMAGE_THUNK_DATA FindIatThunkInModule(void *moduleBase, const char *dllName, const char *funcName)
+inline PIMAGE_THUNK_DATA FindIatThunkInModule(void* moduleBase, const char* dllName, const char* funcName)
 {
 	auto imports = DataDirectoryFromModuleBase<PIMAGE_IMPORT_DESCRIPTOR>(moduleBase, IMAGE_DIRECTORY_ENTRY_IMPORT);
 	for (; imports->Name; ++imports)
@@ -56,14 +56,14 @@ PIMAGE_THUNK_DATA FindIatThunkInModule(void *moduleBase, const char *dllName, co
 		if (_stricmp(RVA2VA<LPCSTR>(moduleBase, imports->Name), dllName) != 0)
 			continue;
 
-		auto origThunk = RVA2VA<PIMAGE_THUNK_DATA>(moduleBase, imports->OriginalFirstThunk);
-		auto thunk = RVA2VA<PIMAGE_THUNK_DATA>(moduleBase, imports->FirstThunk);
+		const auto origThunk = RVA2VA<PIMAGE_THUNK_DATA>(moduleBase, imports->OriginalFirstThunk);
+		const auto thunk = RVA2VA<PIMAGE_THUNK_DATA>(moduleBase, imports->FirstThunk);
 		return FindAddressByName(moduleBase, origThunk, thunk, funcName);
 	}
 	return nullptr;
 }
 
-PIMAGE_THUNK_DATA FindDelayLoadThunkInModule(void *moduleBase, const char *dllName, const char *funcName)
+inline PIMAGE_THUNK_DATA FindDelayLoadThunkInModule(void* moduleBase, const char* dllName, const char* funcName)
 {
 	auto imports = DataDirectoryFromModuleBase<PIMAGE_DELAYLOAD_DESCRIPTOR>(moduleBase, IMAGE_DIRECTORY_ENTRY_DELAY_IMPORT);
 	for (; imports->DllNameRVA; ++imports)
@@ -71,14 +71,14 @@ PIMAGE_THUNK_DATA FindDelayLoadThunkInModule(void *moduleBase, const char *dllNa
 		if (_stricmp(RVA2VA<LPCSTR>(moduleBase, imports->DllNameRVA), dllName) != 0)
 			continue;
 
-		auto impName = RVA2VA<PIMAGE_THUNK_DATA>(moduleBase, imports->ImportNameTableRVA);
-		auto impAddr = RVA2VA<PIMAGE_THUNK_DATA>(moduleBase, imports->ImportAddressTableRVA);
+		const auto impName = RVA2VA<PIMAGE_THUNK_DATA>(moduleBase, imports->ImportNameTableRVA);
+		const auto impAddr = RVA2VA<PIMAGE_THUNK_DATA>(moduleBase, imports->ImportAddressTableRVA);
 		return FindAddressByName(moduleBase, impName, impAddr, funcName);
 	}
 	return nullptr;
 }
 
-PIMAGE_THUNK_DATA FindDelayLoadThunkInModule(void *moduleBase, const char *dllName, uint16_t ordinal)
+inline PIMAGE_THUNK_DATA FindDelayLoadThunkInModule(void* moduleBase, const char* dllName, uint16_t ordinal)
 {
 	auto imports = DataDirectoryFromModuleBase<PIMAGE_DELAYLOAD_DESCRIPTOR>(moduleBase, IMAGE_DIRECTORY_ENTRY_DELAY_IMPORT);
 	for (; imports->DllNameRVA; ++imports)
@@ -86,8 +86,8 @@ PIMAGE_THUNK_DATA FindDelayLoadThunkInModule(void *moduleBase, const char *dllNa
 		if (_stricmp(RVA2VA<LPCSTR>(moduleBase, imports->DllNameRVA), dllName) != 0)
 			continue;
 
-		auto impName = RVA2VA<PIMAGE_THUNK_DATA>(moduleBase, imports->ImportNameTableRVA);
-		auto impAddr = RVA2VA<PIMAGE_THUNK_DATA>(moduleBase, imports->ImportAddressTableRVA);
+		const auto impName = RVA2VA<PIMAGE_THUNK_DATA>(moduleBase, imports->ImportNameTableRVA);
+		const auto impAddr = RVA2VA<PIMAGE_THUNK_DATA>(moduleBase, imports->ImportAddressTableRVA);
 		return FindAddressByOrdinal(moduleBase, impName, impAddr, ordinal);
 	}
 	return nullptr;

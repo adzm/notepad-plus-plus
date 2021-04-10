@@ -281,11 +281,13 @@ LRESULT Notepad_plus::init(HWND hwnd)
 		_subEditView.execute(SCI_SETFONTQUALITY, SC_EFF_QUALITY_LCD_OPTIMIZED);
 	}
 
-	if (NppDarkMode::IsEnabled()) {
+	if (NppDarkMode::IsEnabled())
+	{
 		_mainEditView.setBorderEdge(false);
 		_subEditView.setBorderEdge(false);
 	}
-	else {
+	else
+	{
 		_mainEditView.setBorderEdge(svp1._showBorderEdge);
 		_subEditView.setBorderEdge(svp1._showBorderEdge);
 	}

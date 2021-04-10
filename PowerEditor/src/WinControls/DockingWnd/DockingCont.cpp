@@ -137,7 +137,7 @@ tTbData* DockingCont::createToolbar(tTbData data)
 	}
 
 	// set attached child window
-    ::SetParent(pTbData->hClient, ::GetDlgItem(_hSelf, IDC_CLIENT_TAB));
+	::SetParent(pTbData->hClient, ::GetDlgItem(_hSelf, IDC_CLIENT_TAB));
 
 	// set names for captions and view toolbar
 	viewToolbar(pTbData);
@@ -344,17 +344,17 @@ LRESULT DockingCont::runProcCaption(HWND hwnd, UINT Message, WPARAM wParam, LPAR
 			{
 				if (_isMouseClose == FALSE)
 				{
-                    // keep sure that button is still down and within caption
-                    if ((wParam == MK_LBUTTON) && (isInRect(hwnd, pt.x, pt.y) == posCaption))
-                    {
-    					_dragFromTab = FALSE;
-    					NotifyParent(DMM_MOVE);
-    					_isMouseDown = FALSE;
-                    }
-                    else
-                    {
-                        _isMouseDown = FALSE;
-                    }
+					// keep sure that button is still down and within caption
+					if ((wParam == MK_LBUTTON) && (isInRect(hwnd, pt.x, pt.y) == posCaption))
+					{
+						_dragFromTab = FALSE;
+						NotifyParent(DMM_MOVE);
+						_isMouseDown = FALSE;
+					}
+					else
+					{
+						_isMouseDown = FALSE;
+					}
 				}
 				else
 				{
@@ -453,7 +453,8 @@ void DockingCont::drawCaptionItem(DRAWITEMSTRUCT *pDrawItemStruct)
 	// begin with paint
 	::SetBkMode(hDc, TRANSPARENT);
 
-	if (NppDarkMode::IsEnabled()) {
+	if (NppDarkMode::IsEnabled())
+	{
 		bgbrush = ::CreateSolidBrush(_isActive ? NppDarkMode::GetSofterBackgroundColor() : NppDarkMode::GetBackgroundColor());
 		SetTextColor(hDc, NppDarkMode::GetTextColor());
 	}
@@ -566,18 +567,21 @@ void DockingCont::drawCaptionItem(DRAWITEMSTRUCT *pDrawItemStruct)
 
 	// draw button
 
-	if (NppDarkMode::IsEnabled()) {
+	if (NppDarkMode::IsEnabled())
+	{
 		::SelectObject(hDc, NppParameters::getInstance().getDefaultUIFont());
 
 		rc = pDrawItemStruct->rcItem;
-		if (_isTopCaption == TRUE) {
+		if (_isTopCaption == TRUE)
+		{
 			rc.left = rc.right - _closeButtonWidth - _closeButtonPosLeftDynamic;
 		}
 		else {
 			rc.bottom = rc.top + _closeButtonWidth + _closeButtonPosLeftDynamic; // non-dark uses Left instead of Top for the button pos so being consistent
 		}
 
-		if ((_isMouseOver == TRUE) && (_isMouseDown == TRUE)) {
+		if ((_isMouseOver == TRUE) && (_isMouseDown == TRUE))
+		{
 			::SetTextColor(hDc, RGB(0xFF, 0xFF, 0xFF));
 		}
 
@@ -732,9 +736,9 @@ LRESULT DockingCont::runProcTab(HWND hwnd, UINT Message, WPARAM wParam, LPARAM l
 				NotifyParent(DMM_MOVE);
 				_beginDrag = FALSE;
 			}
-            else
-            {
-				int	iItemSel = static_cast<int32_t>(::SendMessage(hwnd, TCM_GETCURSEL, 0, 0));
+			else
+			{
+				int iItemSel = static_cast<int32_t>(::SendMessage(hwnd, TCM_GETCURSEL, 0, 0));
 
 				if ((_bTabTTHover == FALSE) && (iItem != iItemSel))
 				{
@@ -966,13 +970,13 @@ INT_PTR CALLBACK DockingCont::run_dlgProc(UINT Message, WPARAM wParam, LPARAM lP
 		}
 		case WM_ERASEBKGND:
 		{
-			if (!NppDarkMode::IsEnabled()) {
+			if (!NppDarkMode::IsEnabled())
 				break;
-			}
+			
 			RECT rc = { 0 };
 			getClientRect(rc);
 			FillRect((HDC)wParam, &rc, NppDarkMode::GetBackgroundBrush());
-			return 1;
+			return TRUE;
 		}
 
 		case WM_DRAWITEM :

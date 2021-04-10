@@ -91,7 +91,8 @@ LRESULT Notepad_plus_Window::runProc(HWND hwnd, UINT message, WPARAM wParam, LPA
 		{
 			try
 			{
-				if (NppDarkMode::IsEnabled()) {
+				if (NppDarkMode::IsEnabled())
+				{
 					NppDarkMode::AllowDarkModeForWindow(hwnd, true);
 					NppDarkMode::RefreshTitleBarThemeColor(hwnd);
 				}
@@ -99,7 +100,8 @@ LRESULT Notepad_plus_Window::runProc(HWND hwnd, UINT message, WPARAM wParam, LPA
 				_notepad_plus_plus_core._pPublicInterface = this;
 				LRESULT lRet = _notepad_plus_plus_core.init(hwnd);
 
-				if (NppDarkMode::IsEnabled()) {
+				if (NppDarkMode::IsEnabled())
+				{
 					RECT rcClient;
 					GetWindowRect(hwnd, &rcClient);
 
@@ -145,9 +147,8 @@ LRESULT Notepad_plus::process(HWND hwnd, UINT message, WPARAM wParam, LPARAM lPa
 	LRESULT result = FALSE;
 	NppParameters& nppParam = NppParameters::getInstance();
 
-	if (NppDarkMode::UAHWndProc(hwnd, message, wParam, lParam, &result)) {
+	if (NppDarkMode::UAHWndProc(hwnd, message, wParam, lParam, &result))
 		return result;
-	}
 
 	switch (message)
 	{
@@ -160,20 +161,21 @@ LRESULT Notepad_plus::process(HWND hwnd, UINT message, WPARAM wParam, LPARAM lPa
 
 		case WM_ERASEBKGND:
 		{
-			if (NppDarkMode::IsEnabled()) {
+			if (NppDarkMode::IsEnabled())
+			{
 				RECT rc = { 0 };
 				GetClientRect(hwnd, &rc);
 				FillRect((HDC)wParam, &rc, NppDarkMode::GetBackgroundBrush());
 				return 0;
 			}
-			else {
-				return ::DefWindowProc(hwnd, message, wParam, lParam);
-			}
+
+			return ::DefWindowProc(hwnd, message, wParam, lParam);
 		}
 
 		case WM_SETTINGCHANGE:
 		{
-			if (NppDarkMode::OnSettingChange(hwnd, lParam)) {
+			if (NppDarkMode::OnSettingChange(hwnd, lParam))
+			{
 				// dark mode may have been toggled. Reset anything here!
 
 				SendMessage(hwnd, NPPM_SETEDITORBORDEREDGE, 0, NppParameters::getInstance().getSVP()._showBorderEdge);
@@ -1005,7 +1007,7 @@ LRESULT Notepad_plus::process(HWND hwnd, UINT message, WPARAM wParam, LPARAM lPa
 				for (size_t idx = 0; idx < tli->_tlfsLst.size(); ++idx)
 				{
 					if (tli->_tlfsLst[idx]._iView == currentView() &&
-					    tli->_tlfsLst[idx]._docIndex == _pDocTab->getCurrentTabIndex())
+						tli->_tlfsLst[idx]._docIndex == _pDocTab->getCurrentTabIndex())
 					{
 						tli->_currentIndex = static_cast<int>(idx);
 						break;
@@ -1490,11 +1492,13 @@ LRESULT Notepad_plus::process(HWND hwnd, UINT message, WPARAM wParam, LPARAM lPa
 		case NPPM_SETEDITORBORDEREDGE:
 		{
 			bool withBorderEdge = (lParam == 1);
-			if (NppDarkMode::IsEnabled()) {
+			if (NppDarkMode::IsEnabled())
+			{
 				_mainEditView.setBorderEdge(false);
 				_subEditView.setBorderEdge(false);
 			}
-			else {
+			else
+			{
 				_mainEditView.setBorderEdge(withBorderEdge);
 				_subEditView.setBorderEdge(withBorderEdge);
 			}
@@ -1603,16 +1607,20 @@ LRESULT Notepad_plus::process(HWND hwnd, UINT message, WPARAM wParam, LPARAM lPa
 		case WM_NOTIFY:
 		{
 			NMHDR* nmhdr = reinterpret_cast<NMHDR*>(lParam);
-			if (nmhdr->code == NM_CUSTOMDRAW && (nmhdr->hwndFrom == _toolBar.getHSelf())) {
+			if (nmhdr->code == NM_CUSTOMDRAW && (nmhdr->hwndFrom == _toolBar.getHSelf()))
+			{
 				NMTBCUSTOMDRAW* nmtbcd = reinterpret_cast<NMTBCUSTOMDRAW*>(lParam);
-				if (nmtbcd->nmcd.dwDrawStage == CDDS_PREERASE) {
-					if (NppDarkMode::IsEnabled()) {
+				if (nmtbcd->nmcd.dwDrawStage == CDDS_PREERASE)
+				{
+					if (NppDarkMode::IsEnabled())
+					{
 						FillRect(nmtbcd->nmcd.hdc, &nmtbcd->nmcd.rc, NppDarkMode::GetBackgroundBrush());
 						nmtbcd->clrText = NppDarkMode::GetTextColor();
 						SetTextColor(nmtbcd->nmcd.hdc, NppDarkMode::GetTextColor());
 						return CDRF_SKIPDEFAULT;
 					}
-					else {
+					else
+					{
 						return CDRF_DODEFAULT;
 					}
 				}
@@ -1972,7 +1980,7 @@ LRESULT Notepad_plus::process(HWND hwnd, UINT message, WPARAM wParam, LPARAM lPa
 			}
 
 			// _isEndingSessionButNotReady is true means WM_QUERYENDSESSION is sent but no time to finish saving data
-            // then WM_ENDSESSION is sent with wParam == FALSE - Notepad++ should exit in this case
+			// then WM_ENDSESSION is sent with wParam == FALSE - Notepad++ should exit in this case
 			if (_isEndingSessionButNotReady) 
 				::DestroyWindow(hwnd);
 

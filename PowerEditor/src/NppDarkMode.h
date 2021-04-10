@@ -6,8 +6,8 @@ namespace NppDarkMode
 {
 	bool IsEnabled();
 
-	COLORREF InvertLightness(COLORREF c);
-	COLORREF InvertLightnessSofter(COLORREF c);
+	COLORREF InvertLightness(COLORREF color);
+	COLORREF InvertLightnessSofter(COLORREF color);
 
 	COLORREF GetBackgroundColor();
 	COLORREF GetSofterBackgroundColor();
