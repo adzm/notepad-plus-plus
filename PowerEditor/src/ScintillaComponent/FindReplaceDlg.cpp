@@ -272,6 +272,7 @@ void FindReplaceDlg::create(int dialogID, bool isRTL, bool msgDestParent)
 	//::GetWindowRect(_hSelf, &rect);
 	getClientRect(rect);
 	_tab.init(_hInst, _hSelf, false, true);
+	NppDarkMode::subclassTabControl(_tab.getHSelf());
 	int tabDpiDynamicalHeight = NppParameters::getInstance()._dpiManager.scaleY(13);
 	_tab.setFont(TEXT("Tahoma"), tabDpiDynamicalHeight);
 	
@@ -848,8 +849,57 @@ INT_PTR CALLBACK FindReplaceDlg::run_dlgProc(UINT message, WPARAM wParam, LPARAM
 			return TRUE;
 		}
 
+		case WM_CTLCOLOREDIT:
+		case WM_CTLCOLORDLG:
+		case WM_CTLCOLORSTATIC:
+		{
+			if (!NppDarkMode::isEnabled())
+			{
+				break;
+			}
+
+			SetTextColor((HDC)wParam, NppDarkMode::getTextColor());
+			SetBkColor((HDC)wParam, NppDarkMode::getPureBackgroundColor());
+			return (LRESULT)GetStockObject(BLACK_BRUSH);
+		}
+		case WM_PRINTCLIENT:
+		case WM_ERASEBKGND:
+		{
+			if (!NppDarkMode::isEnabled())
+			{
+				break;
+			}
+			RECT rc = { 0 };
+			getClientRect(rc);
+			FillRect((HDC)wParam, &rc, NppDarkMode::getPureBackgroundBrush());
+			SetWindowLongPtr(_hSelf, DWLP_MSGRESULT, TRUE);
+			return TRUE;
+		}
+
+
 		case WM_INITDIALOG :
 		{
+			EnumChildWindows(_hSelf, [](HWND hwnd, LPARAM) {
+				wchar_t className[16] = { 0 };
+				GetClassName(hwnd, className, 9);
+				if (wcscmp(className, L"Button")) {
+					return TRUE;
+				}
+				DWORD nButtonStyle = (DWORD)GetWindowLong(hwnd, GWL_STYLE) & 0xF;
+				switch (nButtonStyle) {
+				case BS_CHECKBOX:
+				case BS_AUTOCHECKBOX:
+				case BS_RADIOBUTTON:
+				case BS_AUTORADIOBUTTON:
+					NppDarkMode::subclassButtonControl(hwnd);
+					break;
+				case BS_GROUPBOX:
+					NppDarkMode::subclassGroupboxControl(hwnd);
+					break;
+				}
+				return TRUE;
+			}, NULL);
+
 			HWND hFindCombo = ::GetDlgItem(_hSelf, IDFINDWHAT);
 			HWND hReplaceCombo = ::GetDlgItem(_hSelf, IDREPLACEWITH);
 			HWND hFiltersCombo = ::GetDlgItem(_hSelf, IDD_FINDINFILES_FILTERS_COMBO);
